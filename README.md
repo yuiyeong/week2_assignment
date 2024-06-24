@@ -52,7 +52,7 @@ classDiagram
 
     class EnrollmentStatus {
         <<Enumeration>>
-        PENDING, ACCEPTED, REJECTED
+        ACCEPTED, REJECTED
     }
 ```
 
