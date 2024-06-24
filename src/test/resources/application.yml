@@ -1,0 +1,10 @@
+spring:
+    output:
+        ansi:
+            enabled: always
+    application:
+        name: lectureenroll
+logging:
+    level:
+        org.hibernate.SQL: debug
+        org.hibernate.orm.jdbc.bind: debug
