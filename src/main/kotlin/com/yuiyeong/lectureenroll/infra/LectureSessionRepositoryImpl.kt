@@ -13,6 +13,8 @@ class LectureSessionRepositoryImpl(
     override fun findOneById(id: Long): LectureSession? =
         jpaRepository.findById(id).map { it.toLectureSession() }.orElse(null)
 
+    override fun findOneWithLockById(id: Long): LectureSession? = jpaRepository.findOneWithLockById(id)?.toLectureSession()
+
     override fun findAll(): List<LectureSession> = jpaRepository.findAll().map { it.toLectureSession() }
 
     override fun findAllByLectureId(lectureId: Long): List<LectureSession> =

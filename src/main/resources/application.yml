@@ -13,8 +13,10 @@ spring:
         hibernate:
             ddl-auto: create
         properties:
+            jakarta.persistence.lock.timeout: 10000  # 10초
             hibernate:
                 show_sql: true
+                lock.timeout: 10000  # 10초
 logging:
     level:
         org.hibernate.SQL: debug
