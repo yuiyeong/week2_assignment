@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 interface LectureSessionJpaRepository : JpaRepository<LectureSessionEntity, Long> {
     @EntityGraph(attributePaths = ["lecture"])
     override fun findAll(): MutableList<LectureSessionEntity>
+
+    fun findAllByLectureId(lectureId: Long): List<LectureSessionEntity>
 }
