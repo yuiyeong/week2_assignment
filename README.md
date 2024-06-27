@@ -38,7 +38,7 @@ classDiagram
 
     class Enrollment {
         Long id
-        User user
+        Student student
         Lecture lecture
         LocalDateTime enrolledAt
     }
@@ -67,7 +67,6 @@ classDiagram
 - `enrollmentPeriod`: 수강 신청이 가능한 기간 (DatetimeRange 타입)
 - `lectureSchedule`: 실제 강의가 진행되는 일정 (DatetimeRange 타입)
 
-
 ### Student
 
 - 수강 신청을 하는 학생에 대한 정보를 포함하는 엔티티입니다.
@@ -81,7 +80,6 @@ classDiagram
 - `student`: 수강 신청한 학생 (Student 엔티티 참조)
 - `lecture`: 수강 신청된 강의 (Lecture 엔티티 참조)
 - `enrolledAt`: 수강 신청이 완료된 일시
-
 
 ## ERD
 
@@ -127,10 +125,10 @@ erDiagram
 ### ENROLLMENT
 
 - 학생의 특강 수강 신청 정보를 저장하는 테이블입니다.
-- `user_id`: 수강 신청한 학생의 id를 나타내며, STUDENT 테이블의 id 에 대응됩니다.
+- `student_id`: 수강 신청한 학생의 id를 나타내며, STUDENT 테이블의 id 에 대응됩니다.
 - `lecture_id`: 수강 신청한 특강의 id를 나타내며, LECTURE 테이블의 id 에 대응됩니다.
 - `enrolled_at`: 수강 신청이 완료된 일시를 나타냅니다.
-- `user_id`, `lecture_id`: 유니크 제약 조건이 있습니다.
+- `student_id`, `lecture_id`: 유니크 제약 조건이 있습니다.
 
 ### STUDENT 테이블
 
