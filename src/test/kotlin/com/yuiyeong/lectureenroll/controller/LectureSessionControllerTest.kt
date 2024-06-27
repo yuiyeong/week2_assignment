@@ -11,6 +11,7 @@ import com.yuiyeong.lectureenroll.repository.EnrollmentRepository
 import com.yuiyeong.lectureenroll.repository.LectureRepository
 import com.yuiyeong.lectureenroll.repository.LectureSessionRepository
 import com.yuiyeong.lectureenroll.repository.StudentRepository
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,7 +26,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
 import kotlin.test.Test
 
-
 @AutoConfigureMockMvc
 @SpringBootTest
 class LectureSessionControllerTest @Autowired constructor(
@@ -36,6 +36,14 @@ class LectureSessionControllerTest @Autowired constructor(
     private val lectureSessionRepository: LectureSessionRepository,
     private val enrollmentRepository: EnrollmentRepository
 ) {
+    @AfterEach
+    fun afterEach() {
+        enrollmentRepository.deleteAll()
+        lectureSessionRepository.deleteAll()
+        lectureRepository.deleteAll()
+        studentRepository.deleteAll()
+    }
+
     @Nested
     inner class ListTest {
         /**
