@@ -20,4 +20,8 @@ class LectureSessionController(
         @PathVariable("sessionId") sessionId: Long,
         @RequestBody req: ApplicationRequest
     ): Result<LectureSessionDto> {
-    }}
+        return Result(
+            LectureSessionDto.from(lectureSessionService.enroll(sessionId, req.studentId))
+        )
+    }
+}
