@@ -1,9 +1,9 @@
 package com.yuiyeong.lectureenroll.domain
 
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.Helper.makeDateTimeRangeAs5Days
 import com.yuiyeong.lectureenroll.exception.InvalidDateRangeException
 import org.assertj.core.api.Assertions
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 
@@ -16,7 +16,7 @@ class DateTimeRangeTest {
     @Test
     fun `should throw InvalidDateRangeException when start is after end`() {
         // given
-        val start = LocalDateTime.now()
+        val start = localDateTime()
         val end = start.minusDays(1)
         // when & then
         Assertions.assertThatThrownBy { DateTimeRange(start, end) }
@@ -31,9 +31,9 @@ class DateTimeRangeTest {
     @Test
     fun `should return if moment is between start and end`() {
         // given
-        val period = makeDateTimeRangeAs5Days(LocalDateTime.now().minusDays(1))
-        val inMoment = LocalDateTime.now()
-        val outMoment = LocalDateTime.now().minusMonths(2)
+        val period = makeDateTimeRangeAs5Days(localDateTime().minusDays(1))
+        val inMoment = localDateTime()
+        val outMoment = localDateTime().minusMonths(2)
 
         // when & then
         Assertions.assertThat(period.contains(inMoment)).isEqualTo(true)
@@ -50,7 +50,7 @@ class DateTimeRangeTest {
     @Test
     fun `should return true when two DateTimeRanges overlap`() {
         // given
-        val period1 = makeDateTimeRangeAs5Days(LocalDateTime.now().minusDays(1))
+        val period1 = makeDateTimeRangeAs5Days(localDateTime().minusDays(1))
         // 같은 기간일 때,
         val period2 = DateTimeRange(period1.start, period1.end)
         // 한 기간의 끝 시점이 다른 기간의 시작 시점보다 미래일 때,
@@ -94,7 +94,7 @@ class DateTimeRangeTest {
     @Test
     fun `should return false when two DatetimeRanges do not overlap`() {
         // given
-        val period1 = makeDateTimeRangeAs5Days(LocalDateTime.now().minusDays(1))
+        val period1 = makeDateTimeRangeAs5Days(localDateTime().minusDays(1))
         // 한 기간의 끝 시점보다 다른 기간의 시작 시점이 미래일 때,
         val period2 = DateTimeRange(period1.end.plusSeconds(1), period1.end.plusSeconds(2))
         // 한 기간의 시작 시점보다 다른 기간의 끝 시점이 과거일 때,

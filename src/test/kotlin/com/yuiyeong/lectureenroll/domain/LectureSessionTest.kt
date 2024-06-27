@@ -2,6 +2,7 @@ package com.yuiyeong.lectureenroll.domain
 
 import com.yuiyeong.lectureenroll.Helper
 import com.yuiyeong.lectureenroll.Helper.createLecture
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.Helper.makeDateTimeRangeAs1Hour
 import com.yuiyeong.lectureenroll.Helper.makeDateTimeRangeAs5Days
 import com.yuiyeong.lectureenroll.exception.AlreadyEnrolledException
@@ -24,7 +25,7 @@ class LectureSessionTest {
         // when & then
         Assertions.assertThatThrownBy {
             val lecture = createLecture()
-            val periodFrom = LocalDateTime.now().plusHours(1)
+            val periodFrom = localDateTime().plusHours(1)
             val scheduleFrom = periodFrom.minusSeconds(2)
             Helper.createLectureSession(lecture, periodFrom, scheduleFrom)
         }.isInstanceOf(PeriodOverlapException::class.java)
@@ -42,7 +43,7 @@ class LectureSessionTest {
         val lectureSession = createLectureSession(lecture)
         val enrollmentCount = lectureSession.enrollments().count()
         val availableCapacity = lectureSession.availableCapacity
-        val at = LocalDateTime.now()
+        val at = localDateTime()
 
         // when
         lectureSession.enroll(student, at)
@@ -98,7 +99,7 @@ class LectureSessionTest {
         // given: 정원이 마감된 강의, 학생, 신청 기간 안에 있는 시점(현재)
         val lecture = createLecture()
         val lectureSession = createLectureSession(lecture, availableCapacity = 0)
-        val at = LocalDateTime.now()
+        val at = localDateTime()
 
         // when & then
         Assertions.assertThatThrownBy { lectureSession.enroll(student, at) }
@@ -115,7 +116,7 @@ class LectureSessionTest {
         // given: 학생, 그 학생이 신청 완료한 강의, 신청 기간 안에 있는 시점(현재)
         val lecture = createLecture()
         val lectureSession = createLectureSession(lecture)
-        val at = LocalDateTime.now()
+        val at = localDateTime()
         lectureSession.enroll(student, at) // 신청 완료 내역 추가
 
         // when & then
@@ -126,8 +127,8 @@ class LectureSessionTest {
 
     private fun createLectureSession(
         lecture: Lecture,
-        periodFrom: LocalDateTime = LocalDateTime.now().minusDays(1), // 1 일 전부터 5일 동안 신청 기한
-        scheduleFrom: LocalDateTime = LocalDateTime.now().plusWeeks(1), // 1 주일 뒤부터 1시간 동안 강의 시간
+        periodFrom: LocalDateTime = localDateTime().minusDays(1), // 1 일 전부터 5일 동안 신청 기한
+        scheduleFrom: LocalDateTime = localDateTime().plusWeeks(1), // 1 주일 뒤부터 1시간 동안 강의 시간
         availableCapacity: Int = 10
     ): LectureSession {
         return LectureSession(

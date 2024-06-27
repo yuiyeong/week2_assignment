@@ -2,6 +2,7 @@ package com.yuiyeong.lectureenroll.repository
 
 import com.yuiyeong.lectureenroll.Helper.createLecture
 import com.yuiyeong.lectureenroll.Helper.createLectureSession
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.domain.Lecture
 import com.yuiyeong.lectureenroll.domain.Student
 import org.assertj.core.api.Assertions
@@ -9,7 +10,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 
@@ -36,8 +36,8 @@ class LectureSessionRepositoryTest @Autowired constructor(
     @Test
     fun `should return a saved lecture session after saving it`() {
         // given
-        val periodFrom = LocalDateTime.now().minusDays(1)
-        val scheduleFrom = LocalDateTime.now().plusWeeks(1)
+        val periodFrom = localDateTime().minusDays(1)
+        val scheduleFrom = localDateTime().plusWeeks(1)
         val lectureSession = createLectureSession(lecture, periodFrom, scheduleFrom)
         val savedOne = lectureSessionRepository.save(lectureSession)
 
@@ -66,8 +66,8 @@ class LectureSessionRepositoryTest @Autowired constructor(
             val delta = it.toLong()
             val lectureSession = createLectureSession(
                 lecture,
-                LocalDateTime.now().minusDays(1 + delta),
-                LocalDateTime.now().plusWeeks(1 + delta),
+                localDateTime().minusDays(1 + delta),
+                localDateTime().plusWeeks(1 + delta),
                 id = 0L
             )
             lectureSessionRepository.save(lectureSession)

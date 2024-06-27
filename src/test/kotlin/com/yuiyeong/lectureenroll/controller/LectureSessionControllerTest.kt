@@ -3,6 +3,7 @@ package com.yuiyeong.lectureenroll.controller
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.yuiyeong.lectureenroll.Helper.createLecture
 import com.yuiyeong.lectureenroll.Helper.createLectureSession
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.controller.dto.LectureSessionDto
 import com.yuiyeong.lectureenroll.domain.Enrollment
 import com.yuiyeong.lectureenroll.domain.Lecture
@@ -23,7 +24,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 @AutoConfigureMockMvc
@@ -52,8 +52,8 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 200 ok with an enrolled lecture session`() {
             // given: 2 개의 lecture 에 대한 lectureSession 이 각각 있는 상황
-            val periodFrom = LocalDateTime.now().minusDays(1)
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1)
+            val periodFrom = localDateTime().minusDays(1)
+            val scheduleFrom = localDateTime().plusWeeks(1)
             val lecture = lectureRepository.save(createLecture(id = 0L))
             val lectureSession =
                 lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom, id = 0L))
@@ -105,8 +105,8 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 200 ok with an enrolled lecture session`() {
             // given
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when
@@ -141,8 +141,8 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 400 with error response when trying to enroll before period starts`() {
             // given
-            val periodFrom = LocalDateTime.now().plusHours(1) // 1 시간 뒤부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().plusHours(1) // 1 시간 뒤부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when
@@ -164,8 +164,8 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 400 with error response when trying to enroll after period ends`() {
             // given
-            val periodFrom = LocalDateTime.now().minusMonths(1) // 1 달 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusDays(1) // 하루 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusMonths(1) // 1 달 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusDays(1) // 하루 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when
@@ -188,8 +188,8 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 400 with error response when trying to enroll in a fully booked lecture`() {
             // given: 현재가 신청 기한에 포함되어 있지만, 수강 가능 인원이 없는 lecture
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(
                 createLectureSession(lecture, periodFrom, scheduleFrom, availableCapacity = 0)
             )
@@ -214,10 +214,10 @@ class LectureSessionControllerTest @Autowired constructor(
         @Test
         fun `should return 400 bad request when trying to enroll in the already booked lecture`() {
             // given: 현재가 신청 기한에 포함되었고, 정원이 남아있는 lecture 와 해당 강의에 수강이 된 사용자
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
-            enrollmentRepository.save(Enrollment(1L, student, lectureSession, LocalDateTime.now().minusMinutes(5)))
+            enrollmentRepository.save(Enrollment(1L, student, lectureSession, localDateTime().minusMinutes(5)))
 
             // when
             val result = mockMvc.perform(

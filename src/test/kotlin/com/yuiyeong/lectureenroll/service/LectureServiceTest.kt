@@ -2,6 +2,7 @@ package com.yuiyeong.lectureenroll.service
 
 import com.yuiyeong.lectureenroll.Helper.createLecture
 import com.yuiyeong.lectureenroll.Helper.createLectureSession
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.domain.Enrollment
 import com.yuiyeong.lectureenroll.domain.Student
 import com.yuiyeong.lectureenroll.repository.EnrollmentRepository
@@ -12,7 +13,6 @@ import org.assertj.core.api.Assertions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 @SpringBootTest
@@ -38,14 +38,14 @@ class LectureServiceTest @Autowired constructor(
             val delta = it.toLong()
             val lectureSession = createLectureSession(
                 lecture,
-                LocalDateTime.now().minusDays(1 + delta),
-                LocalDateTime.now().plusWeeks(1 + delta),
+                localDateTime().minusDays(1 + delta),
+                localDateTime().plusWeeks(1 + delta),
                 id = 0L
             )
             val session = lectureSessionRepository.save(lectureSession)
             if (it % 2 == 0) {
                 enrollmentRepository.save(
-                    Enrollment(0L, student, session, LocalDateTime.now().minusMinutes(15 - it.toLong()))
+                    Enrollment(0L, student, session, localDateTime().minusMinutes(15 - it.toLong()))
                 )
             }
         }

@@ -2,7 +2,10 @@ package com.yuiyeong.lectureenroll.service
 
 import com.yuiyeong.lectureenroll.Helper.createLecture
 import com.yuiyeong.lectureenroll.Helper.createLectureSession
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.domain.Enrollment
+import com.yuiyeong.lectureenroll.domain.Lecture
+import com.yuiyeong.lectureenroll.domain.LectureSession
 import com.yuiyeong.lectureenroll.domain.Student
 import com.yuiyeong.lectureenroll.exception.AlreadyEnrolledException
 import com.yuiyeong.lectureenroll.exception.CapacityExceededException
@@ -14,35 +17,28 @@ import com.yuiyeong.lectureenroll.repository.LectureRepository
 import com.yuiyeong.lectureenroll.repository.LectureSessionRepository
 import com.yuiyeong.lectureenroll.repository.StudentRepository
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
-import org.mockito.BDDMockito.given
-import org.mockito.BDDMockito.reset
-import org.mockito.BDDMockito.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.test.Test
 
 @SpringBootTest
-@Transactional
 class LectureSessionServiceTest @Autowired constructor(
     private val lectureSessionService: LectureSessionService,
-    @SpyBean private val studentRepository: StudentRepository,
-    @SpyBean private val lectureRepository: LectureRepository,
-    @SpyBean private val lectureSessionRepository: LectureSessionRepository,
-    @SpyBean private val enrollmentRepository: EnrollmentRepository
+    private val studentRepository: StudentRepository,
+    private val lectureRepository: LectureRepository,
+    private val lectureSessionRepository: LectureSessionRepository,
+    private val enrollmentRepository: EnrollmentRepository
 ) {
-    @AfterEach
-    fun afterEach() {
-        reset(studentRepository)
-        reset(lectureRepository)
-        reset(enrollmentRepository)
-    }
 
     @Nested
+    @Transactional
     inner class EnrollmentTest {
 
         /**
@@ -55,15 +51,15 @@ class LectureSessionServiceTest @Autowired constructor(
             val student = studentRepository.save(Student())
             val lecture = lectureRepository.save(createLecture())
 
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when
             val result = lectureSessionService.enroll(lectureSession.id, student.id)
 
             // then: 수강된 lecture session 에 대한 정보가 오고,
-            Assertions.assertThat(result.id).isEqualTo(lecture.id)
+            Assertions.assertThat(result.id).isEqualTo(lectureSession.id)
             Assertions.assertThat(result.lecture.id).isEqualTo(lecture.id)
             Assertions.assertThat(result.lecture.name).isEqualTo(lecture.name)
             Assertions.assertThat(result.lecture.instructorName).isEqualTo(lecture.instructorName)
@@ -87,18 +83,15 @@ class LectureSessionServiceTest @Autowired constructor(
         fun `should throw StudentNotFoundException when unknown studentId`() {
             // given
             val unknownStudentId = 2L
-            val lecture = createLecture()
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
-            val lectureSession = createLectureSession(lecture, periodFrom, scheduleFrom)
-            given(lectureSessionRepository.findOneById(lectureSession.id)).willReturn(lectureSession)
+            val lecture = lectureRepository.save(createLecture())
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(lecture.id, unknownStudentId) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(lectureSession.id, unknownStudentId) }
                 .isInstanceOf(StudentNotFoundException::class.java)
                 .hasMessageContaining("없습니다.")
-
-            verify(lectureSessionRepository).findOneById(lectureSession.id)
         }
 
         /**
@@ -107,13 +100,12 @@ class LectureSessionServiceTest @Autowired constructor(
         @Test
         fun `should throw LectureSessionNotFoundException when unknown lectureId`() {
             // given
-            val student = Student(2L)
-            given(studentRepository.findOneById(student.id)).willReturn(student)
+            val student = studentRepository.save(Student())
 
-            val unknownLectureId = 2L
+            val unknownLectureSessionId = 2L
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(unknownLectureId, student.id) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(unknownLectureSessionId, student.id) }
                 .isInstanceOf(LectureSessionNotFoundException::class.java)
                 .hasMessageContaining("없습니다.")
         }
@@ -125,22 +117,16 @@ class LectureSessionServiceTest @Autowired constructor(
         @Test
         fun `should throw OutOfPeriodException when trying to enroll before period starts`() {
             // given: 신청 기한이 현재 이후인 lecture session
-            val student = Student(20L)
-            given(studentRepository.findOneById(student.id)).willReturn(student)
-
-            val lecture = createLecture()
-            val periodFrom = LocalDateTime.now().plusHours(1) // 1 시간 뒤부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
-            val lectureSession = createLectureSession(lecture, periodFrom, scheduleFrom)
-            given(lectureSessionRepository.findOneById(lectureSession.id)).willReturn(lectureSession)
+            val student = studentRepository.save(Student())
+            val lecture = lectureRepository.save(createLecture())
+            val periodFrom = localDateTime().plusHours(1) // 1 시간 뒤부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(lecture.id, student.id) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(lectureSession.id, student.id) }
                 .isInstanceOf(OutOfPeriodException::class.java)
                 .hasMessageContaining("현재는 신청 기한이 아닙니다.")
-
-            verify(lectureSessionRepository).findOneById(lectureSession.id)
-            verify(studentRepository).findOneById(student.id)
         }
 
         /**
@@ -150,22 +136,16 @@ class LectureSessionServiceTest @Autowired constructor(
         @Test
         fun `should throw OutOfPeriodException when trying to enroll after period ends`() {
             // given: 학생과 신청 기한이 지난 lecture session
-            val student = Student(18L)
-            given(studentRepository.findOneById(student.id)).willReturn(student)
-
-            val lecture = createLecture()
-            val periodFrom = LocalDateTime.now().minusMonths(1) // 1 달 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusDays(1) // 하루 뒤부터 1시간 동안 강의 시간
-            val lectureSession = createLectureSession(lecture, periodFrom, scheduleFrom)
-            given(lectureSessionRepository.findOneById(lectureSession.id)).willReturn(lectureSession)
+            val student = studentRepository.save(Student())
+            val lecture = lectureRepository.save(createLecture())
+            val periodFrom = localDateTime().minusMonths(1) // 1 달 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusDays(1) // 하루 뒤부터 1시간 동안 강의 시간
+            val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(lecture.id, student.id) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(lectureSession.id, student.id) }
                 .isInstanceOf(OutOfPeriodException::class.java)
                 .hasMessageContaining("현재는 신청 기한이 아닙니다.")
-
-            verify(lectureSessionRepository).findOneById(lectureSession.id)
-            verify(studentRepository).findOneById(student.id)
         }
 
         /**
@@ -175,22 +155,18 @@ class LectureSessionServiceTest @Autowired constructor(
         @Test
         fun `should throw CapacityExceededException when trying to enroll in a fully booked lecture`() {
             // given: 현재가 신청 기한에 포함되어 있지만, 수강 가능 인원이 없는 lecture session
-            val student = Student(1L)
-            given(studentRepository.findOneById(student.id)).willReturn(student)
-
-            val lecture = createLecture()
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
-            val lectureSession = createLectureSession(lecture, periodFrom, scheduleFrom, availableCapacity = 0)
-            given(lectureSessionRepository.findOneById(lectureSession.id)).willReturn(lectureSession)
+            val student = studentRepository.save(Student())
+            val lecture = lectureRepository.save(createLecture())
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val lectureSession = lectureSessionRepository.save(
+                createLectureSession(lecture, periodFrom, scheduleFrom, availableCapacity = 0)
+            )
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(lecture.id, student.id) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(lectureSession.id, student.id) }
                 .isInstanceOf(CapacityExceededException::class.java)
                 .hasMessageContaining("정원이 마감된 강의입니다.")
-
-            verify(lectureSessionRepository).findOneById(lectureSession.id)
-            verify(studentRepository).findOneById(student.id)
         }
 
 
@@ -201,20 +177,19 @@ class LectureSessionServiceTest @Autowired constructor(
         @Test
         fun `should throw AlreadyEnrolledException when trying to enroll in the already booked lecture`() {
             // given: 현재가 신청 기한에 포함되었고, 정원이 남아있는 lecture 와
-            val student = studentRepository.save(Student(1L))
+            val student = studentRepository.save(Student())
             val lecture = lectureRepository.save(createLecture())
-
-            val periodFrom = LocalDateTime.now().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
-            val scheduleFrom = LocalDateTime.now().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
             val lectureSession = lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom))
 
             // given: 해당 강의에 수강이 된 사용자
             enrollmentRepository.save(
-                Enrollment(1L, student, lectureSession, LocalDateTime.now().minusMinutes(5))
+                Enrollment(1L, student, lectureSession, localDateTime().minusMinutes(5))
             )
 
             // when & then
-            Assertions.assertThatThrownBy { lectureSessionService.enroll(lecture.id, student.id) }
+            Assertions.assertThatThrownBy { lectureSessionService.enroll(lectureSession.id, student.id) }
                 .isInstanceOf(AlreadyEnrolledException::class.java)
                 .hasMessageContaining("이미 신청 완료한 강의입니다.")
         }

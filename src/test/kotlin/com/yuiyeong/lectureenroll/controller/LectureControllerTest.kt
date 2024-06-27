@@ -2,6 +2,7 @@ package com.yuiyeong.lectureenroll.controller
 
 import com.yuiyeong.lectureenroll.Helper.createLecture
 import com.yuiyeong.lectureenroll.Helper.createLectureSession
+import com.yuiyeong.lectureenroll.Helper.localDateTime
 import com.yuiyeong.lectureenroll.domain.Enrollment
 import com.yuiyeong.lectureenroll.domain.Student
 import com.yuiyeong.lectureenroll.repository.EnrollmentRepository
@@ -17,7 +18,6 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.LocalDateTime
 import kotlin.test.Test
 
 @AutoConfigureMockMvc
@@ -44,8 +44,8 @@ class LectureControllerTest @Autowired constructor(
     fun `should return 200 ok with lecture enrollments about student`() {
         // given: 1개의 lecture 에 대한 lectureSession 이 2개 있고 그 중 1개에 수강 완료한 상황
         val student = studentRepository.save(Student())
-        val periodFrom = LocalDateTime.now().minusDays(1)
-        val scheduleFrom = LocalDateTime.now().plusWeeks(1)
+        val periodFrom = localDateTime().minusDays(1)
+        val scheduleFrom = localDateTime().plusWeeks(1)
         val lecture = lectureRepository.save(createLecture(id = 0L))
         val session1 = lectureSessionRepository.save(
             createLectureSession(lecture, periodFrom, scheduleFrom, id = 0L)
@@ -53,7 +53,7 @@ class LectureControllerTest @Autowired constructor(
         val session2 = lectureSessionRepository.save(
             createLectureSession(lecture, periodFrom, scheduleFrom.plusWeeks(1), id = 0L)
         )
-        enrollmentRepository.save(Enrollment(0L, student, session1, LocalDateTime.now().minusMinutes(15)))
+        enrollmentRepository.save(Enrollment(0L, student, session1, localDateTime().minusMinutes(15)))
 
         // when
         val result = mockMvc.perform(
@@ -68,7 +68,7 @@ class LectureControllerTest @Autowired constructor(
             .andExpect(jsonPath("$.data.length()").value(2))
             .andExpect(jsonPath("$.data[0].lectureSessionId").value(session1.id))
             .andExpect(jsonPath("$.data[0].isEnrolled").value(true))
-            .andExpect(jsonPath("$.data[0].lectureSessionId").value(session2.id))
+            .andExpect(jsonPath("$.data[1].lectureSessionId").value(session2.id))
             .andExpect(jsonPath("$.data[1].isEnrolled").value(false))
     }
 }
