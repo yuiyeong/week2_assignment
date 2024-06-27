@@ -17,6 +17,10 @@ class EnrollmentRepositoryImpl(
         jpaRepository.findAllByStudentId(studentId)
             .map { it.toEnrollment() }
 
+    override fun findAllByLectureIdAndStudentId(lectureId: Long, studentId: Long): List<Enrollment> =
+        jpaRepository.findAllByLectureIdAndStudentId(lectureId, studentId)
+            .map { it.toEnrollment() }
+
     override fun save(enrollment: Enrollment): Enrollment {
         try {
             return jpaRepository.saveAndFlush(enrollment.toEntity()).toEnrollment()
