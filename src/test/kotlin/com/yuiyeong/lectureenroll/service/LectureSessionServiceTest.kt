@@ -194,4 +194,68 @@ class LectureSessionServiceTest @Autowired constructor(
                 .hasMessageContaining("이미 신청 완료한 강의입니다.")
         }
     }
+
+    @Nested
+    inner class ConcurrentEnrollmentTest {
+        private val studentSize = 40
+        private lateinit var lecture: Lecture
+        private lateinit var lectureSession: LectureSession
+        private lateinit var students: List<Student>
+
+        @BeforeEach
+        @Transactional
+        fun beforeEach() {
+            lecture = lectureRepository.save(createLecture())
+            val periodFrom = localDateTime().minusDays(1) // 1 일 전부터 5일 동안 신청 기한
+            val scheduleFrom = localDateTime().plusWeeks(1) // 1 주일 뒤부터 1시간 동안 강의 시간
+            lectureSession = lectureSessionRepository.save(
+                createLectureSession(
+                    lecture,
+                    periodFrom,
+                    scheduleFrom,
+                    capacity = 30,
+                    availableCapacity = 30
+                )
+            )
+            students = (0..<studentSize).map { studentRepository.save(Student()) }
+        }
+
+        /**
+         * 동시에 enroll 의 다수가 호출하더라도, 정원까지만 수강 신청이 완료되어야 한다.
+         */
+        @Test
+        fun `should enroll exactly up to capacity with concurrent requests`() {
+            // given: 다수의 학생이 수강 신청 대기 중인 상황
+            val executorService = Executors.newFixedThreadPool(students.count())
+            val latch = CountDownLatch(students.count())
+            val successfulEnrollments = AtomicInteger(0)
+            val failedEnrollments = AtomicInteger(0)
+
+            // when
+            for (i in 0..<studentSize) {
+                executorService.submit {
+                    try {
+                        lectureSessionService.enroll(lectureSession.id, students[i].id)
+                        successfulEnrollments.incrementAndGet()
+                    } catch (e: Exception) {
+                        failedEnrollments.incrementAndGet()
+                    } finally {
+                        latch.countDown()
+                    }
+                }
+            }
+
+            latch.await()
+            executorService.shutdown()
+            executorService.awaitTermination(1, TimeUnit.MINUTES)
+
+            // then: success 가 정원만큼 있는지 확인
+            Assertions.assertThat(successfulEnrollments.get()).isEqualTo(lectureSession.capacity)
+            Assertions.assertThat(failedEnrollments.get()).isEqualTo(students.count() - lectureSession.capacity)
+
+            // then: lectureSession 의 수용 가능 인원이 0 인지 확인
+            val updatedLectureSession = lectureSessionRepository.findOneById(lectureSession.id)
+            Assertions.assertThat(updatedLectureSession!!.availableCapacity).isEqualTo(0)
+        }
+    }
 }
