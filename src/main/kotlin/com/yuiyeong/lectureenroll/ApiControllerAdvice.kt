@@ -1,20 +1,22 @@
 package com.yuiyeong.lectureenroll
 
-import org.springframework.http.HttpStatus
+import com.yuiyeong.lectureenroll.controller.dto.ErrorResult
+import com.yuiyeong.lectureenroll.service.ExceptionTranslationService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler
 
-data class ErrorResponse(val message: String)
-
 @RestControllerAdvice
-class ApiControllerAdvice : ResponseEntityExceptionHandler() {
+class ApiControllerAdvice(
+    private val exceptionTranslationService: ExceptionTranslationService
+) : ResponseEntityExceptionHandler() {
     @ExceptionHandler(Exception::class)
-    fun handleException(e: Exception): ResponseEntity<ErrorResponse> {
+    fun handleException(e: Exception): ResponseEntity<ErrorResult> {
+        val error = exceptionTranslationService.translateException(e)
         return ResponseEntity(
-            ErrorResponse("에러가 발생했습니다."),
-            HttpStatus.INTERNAL_SERVER_ERROR,
+            ErrorResult(error.message),
+            error.status,
         )
     }
 }
