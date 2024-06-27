@@ -54,4 +54,32 @@ class LectureSessionRepositoryTest @Autowired constructor(
         Assertions.assertThat(foundOne.enrollmentPeriod).isEqualTo(savedOne.enrollmentPeriod)
         Assertions.assertThat(foundOne.lecturePeriod).isEqualTo(savedOne.lecturePeriod)
     }
+
+    /**
+     * 모든 lectureSession 을 lecture 정보와 함께 가져와야 한다.
+     */
+    @Test
+    fun `should return all lecture sessions with the lecture`() {
+        // given
+        val sessionSize = 5
+        (0..<sessionSize).forEach {
+            val delta = it.toLong()
+            val lectureSession = createLectureSession(
+                lecture,
+                LocalDateTime.now().minusDays(1 + delta),
+                LocalDateTime.now().plusWeeks(1 + delta),
+                id = 0L
+            )
+            lectureSessionRepository.save(lectureSession)
+        }
+
+        // when
+        val lectureSessions = lectureSessionRepository.findAll()
+
+        // then
+        Assertions.assertThat(lectureSessions.count()).isEqualTo(sessionSize)
+        lectureSessions.forEach {
+            Assertions.assertThat(it.lecture.id).isEqualTo(lecture.id)
+        }
+    }
 }

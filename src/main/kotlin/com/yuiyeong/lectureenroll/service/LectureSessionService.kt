@@ -15,6 +15,10 @@ class LectureSessionService(
     private val sessionRepository: LectureSessionRepository,
     private val enrollmentRepository: EnrollmentRepository,
 ) {
+    fun findAll(): List<LectureSession> {
+        return sessionRepository.findAll()
+    }
+
     fun enroll(lectureSessionId: Long, studentId: Long): LectureSession {
         val session = sessionRepository.findOneById(lectureSessionId) ?: throw LectureSessionNotFoundException()
         val student = studentRepository.findOneById(studentId) ?: throw StudentNotFoundException()
