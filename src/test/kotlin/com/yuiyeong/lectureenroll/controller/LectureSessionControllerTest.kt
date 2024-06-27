@@ -18,6 +18,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -35,6 +36,50 @@ class LectureSessionControllerTest @Autowired constructor(
     private val lectureSessionRepository: LectureSessionRepository,
     private val enrollmentRepository: EnrollmentRepository
 ) {
+    @Nested
+    inner class ListTest {
+        /**
+         * 특강 세션을 요청하면, 모든 특강에 대한 세션 정보를 내려주어야 한다.
+         */
+        @Test
+        fun `should return 200 ok with an enrolled lecture session`() {
+            // given: 2 개의 lecture 에 대한 lectureSession 이 각각 있는 상황
+            val periodFrom = LocalDateTime.now().minusDays(1)
+            val scheduleFrom = LocalDateTime.now().plusWeeks(1)
+            val lecture = lectureRepository.save(createLecture(id = 0L))
+            val lectureSession =
+                lectureSessionRepository.save(createLectureSession(lecture, periodFrom, scheduleFrom, id = 0L))
+
+            val anotherLecture = lectureRepository.save(createLecture(id = 0L))
+            lectureSessionRepository.save(
+                createLectureSession(anotherLecture, periodFrom, scheduleFrom.plusWeeks(1), id = 0L)
+            )
+
+            // when
+            val result = mockMvc.perform(
+                get("/lecture-sessions").contentType(MediaType.APPLICATION_JSON)
+            )
+
+            // then
+            result.andExpect(status().isOk)
+                .andExpect(jsonPath("$.data").isArray)
+                .andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[0].id").value(lectureSession.id))
+                .andExpect(jsonPath("$.data[0].lectureName").value(lectureSession.lecture.name))
+                .andExpect(jsonPath("$.data[0].lectureInstructorName").value(lectureSession.lecture.instructorName))
+                .andExpect(
+                    jsonPath("$.data[0].sessionStart").value(
+                        lectureSession.lecturePeriod.start.format(LectureSessionDto.formatter)
+                    )
+                )
+                .andExpect(
+                    jsonPath("$.data[0].sessionEnd").value(
+                        lectureSession.lecturePeriod.end.format(LectureSessionDto.formatter)
+                    )
+                )
+        }
+    }
+
     @Nested
     inner class ApplicationTest {
         private lateinit var student: Student

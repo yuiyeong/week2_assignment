@@ -42,7 +42,6 @@ class LectureSessionServiceTest @Autowired constructor(
         reset(enrollmentRepository)
     }
 
-
     @Nested
     inner class EnrollmentTest {
 

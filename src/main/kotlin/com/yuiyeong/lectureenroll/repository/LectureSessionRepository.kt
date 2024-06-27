@@ -6,6 +6,8 @@ interface LectureSessionRepository {
 
     fun findOneById(id: Long): LectureSession?
 
+    fun findAll(): List<LectureSession>
+
     fun save(lectureSession: LectureSession): LectureSession
 
     fun deleteAll()
