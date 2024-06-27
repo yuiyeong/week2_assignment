@@ -15,6 +15,9 @@ class LectureSessionRepositoryImpl(
 
     override fun findAll(): List<LectureSession> = jpaRepository.findAll().map { it.toLectureSession() }
 
+    override fun findAllByLectureId(lectureId: Long): List<LectureSession> =
+        jpaRepository.findAllByLectureId(lectureId).map { it.toLectureSession() }
+
     override fun save(lectureSession: LectureSession): LectureSession =
         jpaRepository.save(lectureSession.toEntity()).toLectureSession()
 
